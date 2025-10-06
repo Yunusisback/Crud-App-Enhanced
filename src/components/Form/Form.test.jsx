@@ -1,48 +1,117 @@
-import Form from "./index";
-import { render, screen } from '@testing-library/react';
-import { vi } from "vitest";
-// user-event'i düzgün bir şekilde 'user' adıyla import ettik
-import user from "@testing-library/user-event"; 
-// Gereksiz import'u sildik: import { send } from "vite"; 
+import { render, screen, waitFor } from '@testing-library/react';
+import Form from '.';
+import user from '@testing-library/user-event';
+import { vi } from 'vitest';
+import toast from 'react-hot-toast';
 
-// user.setup() global olarak tanımlanırsa daha temiz olur, 
-// ancak test içinde kullanmak teknik olarak mümkündür.
-// user.setup();
+vi.mock('react-hot-toast');
 
-it("formu gönderince addUser fonksiyonu doğru parametrelerle çağrılmallı", async () => { 
-    // user.setup() her testin başında çağrılmalıdır
+// test verisi
+const testUser = {
+    id: 'a123',
+    name: 'Ahmet',
+    email: 'ahmet@mail.com',
+    age: '25'
+};
+
+it('form render edildiğinde inputlar ekrana basılır', () => {
+    render(<Form addUser={vi.fn()} editUser={vi.fn()} userToEdit={null} setUserToEdit={vi.fn()} />);
+
+    expect(screen.getByLabelText(/İsim/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Yaş/i)).toBeInTheDocument();
+});
+
+it('form geçerli verilerle gönderildiğinde addUser çağrılmalı', async () => {
     user.setup();
+    const mockFn = vi.fn();
+
+    render(<Form addUser={mockFn} editUser={vi.fn()} userToEdit={null} setUserToEdit={vi.fn()} />);
+
+    // Inputları bul
+
+    const nameInp = screen.getByLabelText(/İsim/i);
+    const mailInp = screen.getByLabelText(/Email/i);
+    const ageInp = screen.getByLabelText(/Yaş/i);
+    const sendBtn = screen.getByRole('button', { name: 'Kullanıcı Ekle' });
+
+    // Veri gir
+
+    await user.type(nameInp, testUser.name);
+    await user.type(mailInp, testUser.email);
+    await user.type(ageInp, testUser.age);
+
+    // Formu gönder
+
+    await user.click(sendBtn);
+
+    // Mock fonksiyonunun doğru verilerle çağrıldığını kontrol et
+
+    expect(mockFn).toHaveBeenCalledWith({
+        name: testUser.name,
+        email: testUser.email,
+        age: testUser.age,
+    });
     
-    // fonskiyonun mock halini oluştur
-    const mock = vi.fn();
+    // Formun sıfırlandığını kontrol et
 
-    render(<Form addUser={mock} />);   
+    await waitFor(() => {
+        expect(nameInp).toHaveValue('');
+    });
+});
 
+it('düzenleme modunda (editUser) gönderildiğinde editUser çağrılmalı', async () => {
+    user.setup();
+    const editMock = vi.fn();
 
-// 1- gerekli elemanları çağıracağız
-const nameInput = screen.getByLabelText("İsim");
-// Placeholder ile yaş inputunu alıyoruz
-const ageInput = screen.getByPlaceholderText("örn:20"); 
-const mailInput = screen.getByLabelText("Email");
-const sendBtn = screen.getByText("Kullanıcı Ekle");
+    render(<Form addUser={vi.fn()} editUser={editMock} userToEdit={testUser} setUserToEdit={vi.fn()} />);
 
+    // Formun düzenleme modunda olduğunu kontrol et
 
-// 2- inputları dolduracağız
-// Sadece type yöntemini kullanıyoruz.
-await user.type(nameInput, "Elifsu");
+    const sendBtn = screen.getByRole('button', { name: 'Kullanıcıyı Güncelle' });
 
-await user.type(ageInput, "30");
+    // Inputları bul
 
-await user.type(mailInput, "elifsu@gmail.com");
+    const nameInp = screen.getByLabelText(/İsim/i);
+    
+    // İsiimi güncelle
 
-// 3- gönder butonuna tıklayacağız
-await user.click(sendBtn);
+    await user.clear(nameInp);
+    await user.type(nameInp, 'Güncel Ahmet');
 
-// 4- addUser fonksiyonunun doğru parametrelerle çağrıldığını test edeceğiz
-expect(mock).toHaveBeenCalledWith({  // burda toHaveBeenCalledWith kullanıyoruz çünkü fonksiyonun çağrılıp çağrılmadığını değil
-    // çağrıldıysa hangi parametrelerle çağrıldığını test ediyoruz 
-    name: "Elifsu", 
-    age: "30", 
-    email: "elifsu@gmail.com"
-});; 
+    await user.click(sendBtn);
+
+    // Mock fonksiyonunun çağrıldığını ve ID'yi içerdiğini kontrol et
+
+    expect(editMock).toHaveBeenCalledWith({
+        id: testUser.id, 
+        name: 'Güncel Ahmet', 
+        email: testUser.email,
+        age: testUser.age,
+    });
+});
+
+it('geçersiz email girildiğinde hata mesajı gösterilir ve addUser çağrılmaz', async () => {
+    user.setup();
+    const addMock = vi.fn();
+    toast.error = vi.fn();
+
+    render(<Form addUser={addMock} editUser={vi.fn()} userToEdit={null} setUserToEdit={vi.fn()} />);
+
+    // Sadece geçersiz email gir
+
+    await user.type(screen.getByLabelText(/Email/i), 'hataliemail');
+    await user.click(screen.getByRole('button', { name: 'Kullanıcı Ekle' }));
+
+    // Hata mesajı görünmeli
+
+    expect(screen.getByText('Geçerli bir email gir')).toBeInTheDocument();
+    
+    // addUser çağrılmamalı
+
+    expect(addMock).not.toHaveBeenCalled();
+    
+    // Toast çağrılmalı
+    
+    expect(toast.error).toHaveBeenCalled();
 });
