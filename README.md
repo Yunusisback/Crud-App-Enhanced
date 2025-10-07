@@ -39,6 +39,9 @@ npm (v7 or higher)
 
 
 
+![crudenhancedgif](https://github.com/user-attachments/assets/d479ce7f-8ebe-433b-aaf9-4ed57c20c66b)
+
+
 
 # React + Vite
 
