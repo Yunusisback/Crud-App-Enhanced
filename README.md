@@ -1,7 +1,7 @@
 
 🚀 User Management CRUD Application (React & Tailwind CSS)
 
-This project is a simple and modern User Management (CRUD) application built with React. It uses Local Storage for data persistence and is styled with Tailwind CSS to enhance UI/UX quality.
+This project is a simple and modern User Management (CRUD) application built with React. It uses Local Storage for data persistence and is styled with Bootstrap to enhance UI/UX quality.
 
 
 🌟 Key Features
@@ -23,13 +23,13 @@ The project is built with popular tools and libraries from the modern JavaScript
 
 React 19: Core library for building the user interface.
 
-Tailwind CSS: Utility-first CSS framework for fast and flexible styling.
+Bootstrap 5: Powerful frontend toolkit for fast, responsive, and mobile-first design.
 
 React Hot Toast: Elegant notifications for user actions (Add/Delete/Update).
 
 uuid: Generates unique IDs for records.
 
-Testing Library: Provides React-compatible tools for component testing.
+vitest : Blazing fast unit test framework for testing components.
 
 📋 Prerequisites
 
